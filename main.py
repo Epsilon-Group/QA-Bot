@@ -40,12 +40,15 @@ def main():
                     send_message(chat_id, "سلام")
                     continue
                 if text == "/help":
-                    help_text = ("Available commands:\n"
-                                 "start - Start the bot and show greeting message.\n"
-                                 "help - Display help information and list all commands.\n"
-                                 "questions - List available questions.\n"
-                                 "random - Get a random Q&A pair.\n"
-                                 "search - Search for questions by keyword.\n")
+                    help_text = (
+                        "دستورات موجود:\n"
+                        "start - شروع و نمایش پیام خوش‌آمدگویی.\n"
+                        "help - نمایش راهنمای دستورات.\n"
+                        "questions - نمایش لیست سوالات از پیش تعریف‌شده.\n"
+                        "random - دریافت یک پرسش و پاسخ تصادفی.\n"
+                        "search [کلمه] - جستجو در سوالات بر اساس کلمه کلیدی.\n"
+                        "newfeature - استفاده از فیچر جدید برای دریافت اطلاعات اضافی.\n"
+                    )
                     send_message(chat_id, help_text)
                     continue
                 if text == "/questions":
@@ -59,18 +62,21 @@ def main():
                     questions = list(qa.keys())
                     random_question = random.choice(questions)
                     answer = qa[random_question]
-                    send_message(chat_id, f"Question: {random_question}\nAnswer: {answer}")
+                    send_message(chat_id, f"سوال: {random_question}\nپاسخ: {answer}")
                     continue
                 if text.startswith("/search "):
-                    keyword = text[len("/search "):].strip()
-                    matching = [q for q in qa.keys() if keyword.lower() in q.lower()]
+                    keyword = text[len("/search "):].strip().lower()
+                    matching = [q for q in qa.keys() if keyword in q.lower()]
                     if matching:
                         result = ""
                         for i, q in enumerate(matching, 1):
                             result += f"{i}. {q}\n"
                         send_message(chat_id, result)
                     else:
-                        send_message(chat_id, "No matching questions found.")
+                        send_message(chat_id, "سوالی با این کلمه کلیدی یافت نشد.")
+                    continue
+                if text == "/newfeature":
+                    send_message(chat_id, "این فیچر جدید است! به زودی امکانات بیشتری اضافه خواهد شد.")
                     continue
                 if text.isdigit():
                     idx = int(text) - 1
