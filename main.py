@@ -7,7 +7,7 @@ from qa import qa
 
 load_dotenv()
 TOKEN = os.getenv("TELEGRAM_API_TOKEN")
-ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")  # شناسه کاربری مدیر (سازنده بات) که باید در فایل .env تنظیم شود
+ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
 BASE_URL = f"https://api.telegram.org/bot{TOKEN}"
 
 def get_updates(offset=None):
@@ -38,15 +38,28 @@ def main():
                 chat_id = message["chat"]["id"]
                 text = message.get("text", "").strip()
                 if text == "/start":
-                    send_message(chat_id, "سلام")
+                    start_text = (
+                        "سلام!\n\n"
+                        "به بات پرسش و پاسخ موسسه آموزشی اپسیلون خوش آمدید.\n\n"
+                        "این بات به شما امکان می‌دهد تا به سادگی از میان سوالات از پیش تعریف‌شده، "
+                        "یا با ارسال شماره، متن کامل یا بخشی از سوال، پاسخ مورد نظر خود را دریافت کنید.\n\n"
+                        "برای مشاهده راهنما و دستورات موجود، دستور help را ارسال کنید.\n"
+                        "همچنین در صورت تمایل به ارسال پیشنهاد برای فیچرهای جدید، از دستور newfeature استفاده نمایید. "
+                        "پیشنهاد شما به سازنده بات فوروارد خواهد شد.\n\n"
+                        "توجه: برای دریافت پیشنهاد فیچر جدید، ADMIN_CHAT_ID باید در فایل .env تنظیم شده باشد.\n"
+                        "برای پیدا کردن شناسه چت خود، می‌توانید از ربات‌هایی مانند @userinfobot استفاده کنید یا پیام خود را به بات ارسال کرده و شناسه چت را از خروجی getUpdates دریافت نمایید.\n\n"
+                        "مثال تنظیم ADMIN_CHAT_ID در فایل .env:\n"
+                        "ADMIN_CHAT_ID=شماره_شناسه_مدیر\n"
+                    )
+                    send_message(chat_id, start_text)
                     continue
                 if text == "/help":
                     help_text = (
                         "دستورات موجود:\n"
-                        "start - شروع و نمایش پیام خوش‌آمدگویی.\n"
+                        "start - نمایش پیام خوش‌آمدگویی و توضیحات کامل درباره بات و نحوه استفاده.\n"
                         "help - نمایش راهنمای دستورات و نحوه پرسیدن سوال.\n"
-                        "questions - نمایش لیست سوالات از پیش تعریف‌شده.\n"
-                        "random - دریافت یک پرسش و پاسخ تصادفی.\n"
+                        "questions - نمایش لیست سوالات از پیش تعریف‌شده به همراه دستورالعمل استفاده.\n"
+                        "random - دریافت یک پرسش و پاسخ تصادفی با فاصله مناسب بین سوال و پاسخ.\n"
                         "search - جستجو در سوالات بر اساس کلمه کلیدی (مثال: search ریاضی).\n"
                         "newfeature - ارسال پیشنهاد فیچر جدید به سازنده بات (مثال: newfeature اضافه کردن قابلیت X).\n\n"
                         "برای دریافت پاسخ از سوالات، شما می‌توانید:\n"
@@ -72,7 +85,7 @@ def main():
                 if text.startswith("/search"):
                     parts = text.split(maxsplit=1)
                     if len(parts) < 2 or not parts[1].strip():
-                        send_message(chat_id, "برای استفاده از دستور search، باید پس از کلمه search، کلمه کلیدی را وارد کنید. مثال: search ریاضی")
+                        send_message(chat_id, "برای استفاده از دستور search، باید پس از کلمه search، کلمه کلیدی را وارد کنید.\nمثال: search ریاضی")
                         continue
                     keyword = parts[1].strip().lower()
                     matching = [q for q in qa.keys() if keyword in q.lower()]
@@ -95,7 +108,7 @@ def main():
                         send_message(ADMIN_CHAT_ID, admin_message)
                         send_message(chat_id, "پیشنهاد شما با موفقیت ارسال شد. سپاسگزاریم.")
                     else:
-                        send_message(chat_id, "متاسفانه در ارسال پیشنهاد خطایی رخ داده است.")
+                        send_message(chat_id, "متاسفانه در ارسال پیشنهاد خطایی رخ داده است. ADMIN_CHAT_ID تنظیم نشده است.")
                     continue
                 if text.isdigit():
                     idx = int(text) - 1
