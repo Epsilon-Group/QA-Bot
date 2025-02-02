@@ -8,6 +8,7 @@ from qa import qa
 load_dotenv()
 TOKEN = os.getenv("TELEGRAM_API_TOKEN")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
+INSTITUTE_CHAT_ID = os.getenv("INSTITUTE_CHAT_ID")
 BASE_URL = f"https://api.telegram.org/bot{TOKEN}"
 
 def get_updates(offset=None):
@@ -23,6 +24,15 @@ def send_message(chat_id, text, reply_markup=None):
     params = {"chat_id": chat_id, "text": text}
     if reply_markup:
         params["reply_markup"] = reply_markup
+    requests.get(url, params=params)
+
+def forward_message(to_chat_id, from_chat_id, message_id):
+    url = f"{BASE_URL}/forwardMessage"
+    params = {
+        "chat_id": to_chat_id,
+        "from_chat_id": from_chat_id,
+        "message_id": message_id
+    }
     requests.get(url, params=params)
 
 def main():
@@ -46,6 +56,7 @@ def main():
                         "برای مشاهده راهنما و دستورات موجود، دستور help را ارسال کنید.\n"
                         "همچنین در صورت تمایل به ارسال پیشنهاد برای فیچرهای جدید، از دستور newfeature استفاده نمایید. "
                         "پیشنهاد شما برای سازنده بات ارسال خواهد شد.\n\n"
+                        "اگر پیشنهادی برای بهبود موسسه آموزشی اپسیلون دارید، می‌توانید از دستور newsuggestion استفاده کنید.\n\n"
                     )
                     send_message(chat_id, start_text)
                     continue
@@ -53,11 +64,12 @@ def main():
                     help_text = (
                         "دستورات موجود:\n"
                         "start - نمایش پیام خوش‌آمدگویی و توضیحات کامل درباره بات و نحوه استفاده.\n"
-                        "help - نمایش راهنمای دستورات و نحوه پرسیدن سوال.\n"
+                        "help - نمایش راهنمای دستورات و توضیحات نحوه پرسیدن سوال.\n"
                         "questions - نمایش لیست سوالات از پیش تعریف‌شده به همراه دستورالعمل استفاده.\n"
                         "random - دریافت یک پرسش و پاسخ تصادفی با فاصله مناسب بین سوال و پاسخ.\n"
                         "search - جستجو در سوالات بر اساس کلمه کلیدی (مثال: search ریاضی).\n"
-                        "newfeature - ارسال پیشنهاد فیچر جدید به سازنده بات (مثال: newfeature اضافه کردن قابلیت X).\n\n"
+                        "newfeature - ارسال پیشنهاد فیچر جدید به سازنده بات به صورت فوروارد (مثال: newfeature پیشنهاد بهبود ...).\n"
+                        "newsuggestion - ارسال پیشنهاد بهبود برای موسسه آموزشی اپسیلون به صورت فوروارد (مثال: newsuggestion پیشنهاد بهبود ...).\n\n"
                         "برای دریافت پاسخ از سوالات، شما می‌توانید:\n"
                         "1. شماره سوال را ارسال کنید (مثلاً 1 برای سوال اول)،\n"
                         "2. متن کامل سوال را وارد کنید، یا\n"
@@ -98,13 +110,16 @@ def main():
                     if len(parts) < 2 or not parts[1].strip():
                         send_message(chat_id, "برای ارسال پیشنهاد فیچر جدید، دستور را به صورت:\nnewfeature متن پیشنهاد\nارسال کنید.")
                         continue
-                    suggestion = parts[1].strip()
-                    admin_message = f"پیشنهاد فیچر جدید از کاربر {chat_id}:\n\n{suggestion}"
-                    if ADMIN_CHAT_ID:
-                        send_message(ADMIN_CHAT_ID, admin_message)
-                        send_message(chat_id, "پیشنهاد شما با موفقیت ارسال شد. سپاسگزاریم.")
-                    else:
-                        send_message(chat_id, "متاسفانه در ارسال پیشنهاد خطایی رخ داده است. ADMIN_CHAT_ID تنظیم نشده است.")
+                    forward_message(ADMIN_CHAT_ID, chat_id, message["message_id"])
+                    send_message(chat_id, "پیشنهاد شما برای بهبود بات با موفقیت ارسال شد. سپاسگزاریم.")
+                    continue
+                if text.startswith("/newsuggestion"):
+                    parts = text.split(maxsplit=1)
+                    if len(parts) < 2 or not parts[1].strip():
+                        send_message(chat_id, "برای ارسال پیشنهاد بهبود برای موسسه، دستور را به صورت:\nnewsuggestion متن پیشنهاد\nارسال کنید.")
+                        continue
+                    forward_message(INSTITUTE_CHAT_ID, chat_id, message["message_id"])
+                    send_message(chat_id, "پیشنهاد شما برای بهبود موسسه آموزشی اپسیلون با موفقیت ارسال شد. سپاسگزاریم.")
                     continue
                 if text.isdigit():
                     idx = int(text) - 1
