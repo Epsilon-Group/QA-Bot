@@ -7,6 +7,7 @@ from qa import qa
 
 load_dotenv()
 TOKEN = os.getenv("TELEGRAM_API_TOKEN")
+ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")  # شناسه کاربری مدیر (سازنده بات) که باید در فایل .env تنظیم شود
 BASE_URL = f"https://api.telegram.org/bot{TOKEN}"
 
 def get_updates(offset=None):
@@ -46,8 +47,8 @@ def main():
                         "help - نمایش راهنمای دستورات و نحوه پرسیدن سوال.\n"
                         "questions - نمایش لیست سوالات از پیش تعریف‌شده.\n"
                         "random - دریافت یک پرسش و پاسخ تصادفی.\n"
-                        "search [کلمه] - جستجو در سوالات بر اساس کلمه کلیدی.\n"
-                        "newfeature - استفاده از فیچر جدید برای دریافت اطلاعات اضافی.\n\n"
+                        "search - جستجو در سوالات بر اساس کلمه کلیدی (مثال: search ریاضی).\n"
+                        "newfeature - ارسال پیشنهاد فیچر جدید به سازنده بات (مثال: newfeature اضافه کردن قابلیت X).\n\n"
                         "برای دریافت پاسخ از سوالات، شما می‌توانید:\n"
                         "1. شماره سوال را ارسال کنید (مثلاً 1 برای سوال اول)،\n"
                         "2. متن کامل سوال را وارد کنید، یا\n"
@@ -68,8 +69,12 @@ def main():
                     answer = qa[random_question]
                     send_message(chat_id, f"سوال: {random_question}\n\nپاسخ: {answer}")
                     continue
-                if text.startswith("/search "):
-                    keyword = text[len("/search "):].strip().lower()
+                if text.startswith("/search"):
+                    parts = text.split(maxsplit=1)
+                    if len(parts) < 2 or not parts[1].strip():
+                        send_message(chat_id, "برای استفاده از دستور search، باید پس از کلمه search، کلمه کلیدی را وارد کنید. مثال: search ریاضی")
+                        continue
+                    keyword = parts[1].strip().lower()
                     matching = [q for q in qa.keys() if keyword in q.lower()]
                     if matching:
                         result = "سوالات پیدا شده:\n\n"
@@ -79,8 +84,18 @@ def main():
                     else:
                         send_message(chat_id, "سوالی با این کلمه کلیدی یافت نشد.")
                     continue
-                if text == "/newfeature":
-                    send_message(chat_id, "این فیچر جدید است! به زودی امکانات بیشتری اضافه خواهد شد.")
+                if text.startswith("/newfeature"):
+                    parts = text.split(maxsplit=1)
+                    if len(parts) < 2 or not parts[1].strip():
+                        send_message(chat_id, "برای ارسال پیشنهاد فیچر جدید، دستور را به صورت:\nnewfeature متن پیشنهاد\nارسال کنید.")
+                        continue
+                    suggestion = parts[1].strip()
+                    admin_message = f"پیشنهاد فیچر جدید از کاربر {chat_id}:\n\n{suggestion}"
+                    if ADMIN_CHAT_ID:
+                        send_message(ADMIN_CHAT_ID, admin_message)
+                        send_message(chat_id, "پیشنهاد شما با موفقیت ارسال شد. سپاسگزاریم.")
+                    else:
+                        send_message(chat_id, "متاسفانه در ارسال پیشنهاد خطایی رخ داده است.")
                     continue
                 if text.isdigit():
                     idx = int(text) - 1
@@ -89,7 +104,6 @@ def main():
                         selected_question = questions[idx]
                         send_message(chat_id, f"سوال: {selected_question}\n\nپاسخ: {qa[selected_question]}")
                         continue
-                # در صورت ارسال متنی که با دستورات مطابقت ندارد، تلاش برای جستجو در سوالات:
                 matching = [q for q in qa.keys() if text.lower() in q.lower()]
                 if matching:
                     if len(matching) == 1:
