@@ -13,9 +13,11 @@ def get_updates(offset=None):
         params["offset"] = offset
     r = requests.get(url, params=params)
     return r.json()
-def send_message(chat_id, text):
+def send_message(chat_id, text, reply_markup=None):
     url = f"{BASE_URL}/sendMessage"
     params = {"chat_id": chat_id, "text": text}
+    if reply_markup:
+        params["reply_markup"] = reply_markup
     requests.get(url, params=params)
 def main():
     offset = None
@@ -28,7 +30,21 @@ def main():
                 if not message:
                     continue
                 chat_id = message["chat"]["id"]
-                text = message.get("text", "")
+                text = message.get("text", "").strip()
+                if text == "/questions":
+                    qlist = ""
+                    questions = list(qa.keys())
+                    for i, q in enumerate(questions, 1):
+                        qlist += f"{i}. {q}\n"
+                    send_message(chat_id, qlist)
+                    continue
+                if text.isdigit():
+                    idx = int(text) - 1
+                    questions = list(qa.keys())
+                    if 0 <= idx < len(questions):
+                        answer = qa[questions[idx]]
+                        send_message(chat_id, answer)
+                        continue
                 answer = qa.get(text, "جوابی برای این سوال موجود نیست.")
                 send_message(chat_id, answer)
         time.sleep(1)
