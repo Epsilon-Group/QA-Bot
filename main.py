@@ -43,16 +43,20 @@ def main():
                     help_text = (
                         "دستورات موجود:\n"
                         "start - شروع و نمایش پیام خوش‌آمدگویی.\n"
-                        "help - نمایش راهنمای دستورات.\n"
+                        "help - نمایش راهنمای دستورات و نحوه پرسیدن سوال.\n"
                         "questions - نمایش لیست سوالات از پیش تعریف‌شده.\n"
                         "random - دریافت یک پرسش و پاسخ تصادفی.\n"
                         "search [کلمه] - جستجو در سوالات بر اساس کلمه کلیدی.\n"
-                        "newfeature - استفاده از فیچر جدید برای دریافت اطلاعات اضافی.\n"
+                        "newfeature - استفاده از فیچر جدید برای دریافت اطلاعات اضافی.\n\n"
+                        "برای دریافت پاسخ از سوالات، شما می‌توانید:\n"
+                        "1. شماره سوال را ارسال کنید (مثلاً 1 برای سوال اول)،\n"
+                        "2. متن کامل سوال را وارد کنید، یا\n"
+                        "3. بخشی از سوال را ارسال کنید تا در میان سوالات جستجو شود.\n"
                     )
                     send_message(chat_id, help_text)
                     continue
                 if text == "/questions":
-                    qlist = ""
+                    qlist = "لیست سوالات (برای دریافت پاسخ، شماره یا متن سوال را ارسال کنید):\n\n"
                     questions = list(qa.keys())
                     for i, q in enumerate(questions, 1):
                         qlist += f"{i}. {q}\n"
@@ -62,13 +66,13 @@ def main():
                     questions = list(qa.keys())
                     random_question = random.choice(questions)
                     answer = qa[random_question]
-                    send_message(chat_id, f"سوال: {random_question}\nپاسخ: {answer}")
+                    send_message(chat_id, f"سوال: {random_question}\n\nپاسخ: {answer}")
                     continue
                 if text.startswith("/search "):
                     keyword = text[len("/search "):].strip().lower()
                     matching = [q for q in qa.keys() if keyword in q.lower()]
                     if matching:
-                        result = ""
+                        result = "سوالات پیدا شده:\n\n"
                         for i, q in enumerate(matching, 1):
                             result += f"{i}. {q}\n"
                         send_message(chat_id, result)
@@ -82,11 +86,22 @@ def main():
                     idx = int(text) - 1
                     questions = list(qa.keys())
                     if 0 <= idx < len(questions):
-                        answer = qa[questions[idx]]
-                        send_message(chat_id, answer)
+                        selected_question = questions[idx]
+                        send_message(chat_id, f"سوال: {selected_question}\n\nپاسخ: {qa[selected_question]}")
                         continue
-                answer = qa.get(text, "جوابی برای این سوال موجود نیست.")
-                send_message(chat_id, answer)
+                # در صورت ارسال متنی که با دستورات مطابقت ندارد، تلاش برای جستجو در سوالات:
+                matching = [q for q in qa.keys() if text.lower() in q.lower()]
+                if matching:
+                    if len(matching) == 1:
+                        selected_question = matching[0]
+                        send_message(chat_id, f"سوال: {selected_question}\n\nپاسخ: {qa[selected_question]}")
+                    else:
+                        result = "سوالات مشابه پیدا شده:\n\n"
+                        for i, q in enumerate(matching, 1):
+                            result += f"{i}. {q}\n"
+                        send_message(chat_id, result)
+                else:
+                    send_message(chat_id, "جوابی برای این سوال موجود نیست.")
         time.sleep(1)
 
 if __name__ == "__main__":
